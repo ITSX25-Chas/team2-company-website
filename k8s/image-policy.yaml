@@ -6,9 +6,12 @@ spec:
   mode: enforce
   images:
     - glob: "ghcr.io/itsx25-team2/company-website**"
+    - glob: "ghcr.io/itsx25-chas/team2-company-website**"
   authorities:
     - name: github-actions-keyless
       keyless:
         identities:
+          - issuer: https://token.actions.githubusercontent.com
+            subjectRegExp: '^https://github\\.com/ITSX25-Chas/team2-company-website/\\.github/workflows/deploy\\.yml@refs/heads/main$'
           - issuer: https://token.actions.githubusercontent.com
             subjectRegExp: '^https://github\.com/itsx25-team2/company-website/\.github/workflows/deploy\.yml@refs/heads/main$'
