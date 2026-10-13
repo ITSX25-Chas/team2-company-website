@@ -17,6 +17,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
+      - name: Normalize image reference
+        id: image
+        shell: bash
+        run: echo "reference=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -41,7 +46,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ steps.image.outputs.reference }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -58,7 +63,7 @@ jobs:
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+          image: ${{ steps.image.outputs.reference }}@${{ steps.build.outputs.digest }}
           format: cyclonedx-json
           output-file: sbom.cdx.json
 
@@ -72,10 +77,10 @@ jobs:
           cosign attest --yes \
             --predicate sbom.cdx.json \
             --type cyclonedx \
-            "ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}"
+            "${{ steps.image.outputs.reference }}@${{ steps.build.outputs.digest }}"
 
       - name: Sign image with Cosign
-        run: cosign sign --yes "ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}"
+        run: cosign sign --yes "${{ steps.image.outputs.reference }}@${{ steps.build.outputs.digest }}"
 
       # --- Network connectivity to K3s node ---
       - name: Generate Ephemeral Headscale Key
@@ -143,7 +148,7 @@ jobs:
       # --- Deploy to K3s ---
       - name: Apply manifests and update image
         run: |
-          export DEPLOY_IMAGE="ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}"
+          export DEPLOY_IMAGE="${{ steps.image.outputs.reference }}@${{ steps.build.outputs.digest }}"
           export GIT_COMMIT="${{ github.sha }}"
           envsubst < k8s/deployment.yaml > /tmp/deployment.yaml
           kubectl apply -f k8s/image-policy.yaml
