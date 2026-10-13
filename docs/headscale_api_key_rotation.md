@@ -59,7 +59,7 @@ esac
 
 printf '%s' "$NEW_KEY" \
   | gh secret set HEADSCALE_API_KEY \
-      --repo itsx25-team2/company-website
+      --repo ITSX25-Chas/team2-company-website
 unset NEW_KEY
 ```
 
@@ -67,7 +67,7 @@ Nyckeln hålls endast tillfälligt i processens minne och skrivs inte ut.
 Kontrollera därefter endast att GitHub visar ett nytt uppdateringsdatum:
 
 ```bash
-gh secret list --repo itsx25-team2/company-website \
+gh secret list --repo ITSX25-Chas/team2-company-website \
   | rg '^HEADSCALE_API_KEY'
 ```
 

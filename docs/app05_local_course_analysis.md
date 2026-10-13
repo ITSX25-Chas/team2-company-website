@@ -57,8 +57,8 @@ bevis för ett intrång:
 
 ## Källor
 
-- [Jonnys sanerade flaggsammanfattning i infra-repot](https://github.com/itsx25-team2/kurs6-team2-infra/blob/main/members/itzmejonny92/flaggar_individuell_sammanfattning_2026-09-24.md)
-- [Teamets arbetssammanfattning 2026-09-24 i infra-repot](https://github.com/itsx25-team2/kurs6-team2-infra/blob/main/docs/team_work_summary_2026-09-24.md)
+- [Jonnys sanerade flaggsammanfattning i infra-repot](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/members/itzmejonny92/flaggar_individuell_sammanfattning_2026-09-24.md)
+- [Teamets arbetssammanfattning 2026-09-24 i infra-repot](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/docs/team_work_summary_2026-09-24.md)
 - [MITRE ATT&CK, Threat Intelligence och TLP](mitre_ti_tlp_summary_2026-10-05.md)
 
 ## Nästa steg

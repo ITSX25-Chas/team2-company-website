@@ -28,17 +28,17 @@ Backlogfilen synkroniseras inte automatiskt med GitHub Issues.
 
 ## Öppna GitHub Issues
 
-- APP-05: [Issue #6](https://github.com/itsx25-team2/company-website/issues/6)
-- APP-06: [Issue #8](https://github.com/itsx25-team2/company-website/issues/8)
-- APP-11: [Issue #7](https://github.com/itsx25-team2/company-website/issues/7)
+- APP-05: [Issue #6](https://github.com/ITSX25-Chas/team2-company-website/issues/6)
+- APP-06: [Issue #8](https://github.com/ITSX25-Chas/team2-company-website/issues/8)
+- APP-11: [Issue #7](https://github.com/ITSX25-Chas/team2-company-website/issues/7)
 
 ## Slutförda GitHub Issues
 
-- APP-08: [Issue #3](https://github.com/itsx25-team2/company-website/issues/3) är tekniskt slutförd genom verifierad rollback och återställning 2026-09-24.
-- APP-09: [Issue #9](https://github.com/itsx25-team2/company-website/issues/9) är slutförd genom PR #16 och verifierad med HTTP `200` via Ingress.
-- APP-07: [Issue #10](https://github.com/itsx25-team2/company-website/issues/10) stängdes automatiskt när PR #33 mergades 2026-10-07. Riskregistret beskriver bevis, påverkan, osäkerhet och defensiv riskreducering.
-- APP-10: [Issue #4](https://github.com/itsx25-team2/company-website/issues/4) är dokumenterat och verifierat: Headscale-policyn använder `root:headscale`, läge `640`, validering och reload enligt [Workshop 3-status](workshop3_setup_status.md).
-- APP-12: [Issue #5](https://github.com/itsx25-team2/company-website/issues/5) är dokumenterat i [rotationsguiden](headscale_api_key_rotation.md) med ansvar, giltighetstid, rotation, verifiering och återkallning utan nyckelvärden.
+- APP-08: [Issue #3](https://github.com/ITSX25-Chas/team2-company-website/issues/3) är tekniskt slutförd genom verifierad rollback och återställning 2026-09-24.
+- APP-09: [Issue #9](https://github.com/ITSX25-Chas/team2-company-website/issues/9) är slutförd genom PR #16 och verifierad med HTTP `200` via Ingress.
+- APP-07: [Issue #10](https://github.com/ITSX25-Chas/team2-company-website/issues/10) stängdes automatiskt när PR #33 mergades 2026-10-07. Riskregistret beskriver bevis, påverkan, osäkerhet och defensiv riskreducering.
+- APP-10: [Issue #4](https://github.com/ITSX25-Chas/team2-company-website/issues/4) är dokumenterat och verifierat: Headscale-policyn använder `root:headscale`, läge `640`, validering och reload enligt [Workshop 3-status](workshop3_setup_status.md).
+- APP-12: [Issue #5](https://github.com/ITSX25-Chas/team2-company-website/issues/5) är dokumenterat i [rotationsguiden](headscale_api_key_rotation.md) med ansvar, giltighetstid, rotation, verifiering och återkallning utan nyckelvärden.
 
 ## Uppdatering 2026-10-08
 

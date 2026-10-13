@@ -31,8 +31,8 @@ tekniska setupen är genomförd och ska inte installeras om.
 | [Workshopstatus](../../docs/workshop3_setup_status.md) | Teknisk setup och verifiering. |
 | [Teamsammanfattning 2026-09-24](../../docs/team_work_summary_2026-09-24.md) | Dagens arbete med Ingress, images, Cosign och rollback. |
 | [Produktbacklog](../../docs/product_backlog.md) | Klara och återstående uppgifter. |
-| [Gemensam anslutningsguide](https://github.com/itsx25-team2/kurs6-team2-infra/blob/main/docs/gemensam_anslutningsguide.md) | Tailscale, Headscale, SSH, MagicDNS och felsökning. |
-| [Amins infra-mapp](https://github.com/itsx25-team2/kurs6-team2-infra/tree/main/members/aminmahamoud-arch) | Tidigare uppföljning och instruktioner. |
+| [Gemensam anslutningsguide](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/docs/gemensam_anslutningsguide.md) | Tailscale, Headscale, SSH, MagicDNS och felsökning. |
+| [Amins infra-mapp](https://github.com/ITSX25-Chas/kurs6-team2-infra/tree/main/members/aminmahamoud-arch) | Tidigare uppföljning och instruktioner. |
 
 ### Personlig kontrollista
 
