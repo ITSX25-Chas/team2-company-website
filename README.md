@@ -87,11 +87,11 @@ branch och pull request.
 ## Relaterad infrastruktur
 
 Applikationens GCP-, Headscale-, nätverks- och K3s-infrastruktur hanteras i det
-separata [infra-repot](https://github.com/itsx25-team2/kurs6-team2-infra).
+separata [infra-repot](https://github.com/ITSX25-Chas/kurs6-team2-infra).
 
-- [Gemensam anslutningsguide](https://github.com/itsx25-team2/kurs6-team2-infra/blob/main/docs/gemensam_anslutningsguide.md)
-- [Infra-repots README](https://github.com/itsx25-team2/kurs6-team2-infra/blob/main/README.md)
-- [Infra-backlog](https://github.com/itsx25-team2/kurs6-team2-infra/blob/main/docs/product_backlog.md)
+- [Gemensam anslutningsguide](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/docs/gemensam_anslutningsguide.md)
+- [Infra-repots README](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/README.md)
+- [Infra-backlog](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/docs/product_backlog.md)
 
 Normal åtkomst till privata resurser sker via personliga Tailscale-noder,
 annonserade subnet-rutter och Split DNS. SOCKS5 är endast en dokumenterad

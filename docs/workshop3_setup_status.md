@@ -12,7 +12,7 @@ Ingress, spårbara images och Cosign-enforcement.
 | --- | --- | --- |
 | Kursrepo | Klar | Utbildarens repository är klonat och originalremote finns kvar som `instructor` |
 | GitHub-organisation | Klar | `itsx25-team2` är skapad och teamet har repositoryatkomst |
-| Applikationsrepo | Klar | `itsx25-team2/company-website` är publikt |
+| Applikationsrepo | Klar | `ITSX25-Chas/team2-company-website` är publikt |
 | Primary | Klar | Instansen kör `e2-small` och har verifierad internetatkomst |
 | K3s | Klar | K3s är aktivt utan Traefik och metrics-server |
 | Kubernetes RBAC | Klar | Begränsad `github-deployer` kan hantera deployment, Service, PVC och Ingress |

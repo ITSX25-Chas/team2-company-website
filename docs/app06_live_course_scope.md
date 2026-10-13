@@ -57,4 +57,4 @@ APP-06 kan stängas först när:
 
 - [APP-05 - Defensiv analys av lokal kursapplikation](app05_local_course_analysis.md)
 - [MITRE ATT&CK, Threat Intelligence och TLP](mitre_ti_tlp_summary_2026-10-05.md)
-- [Teamets arbetssammanfattning 2026-09-24 i infra-repot](https://github.com/itsx25-team2/kurs6-team2-infra/blob/main/docs/team_work_summary_2026-09-24.md)
+- [Teamets arbetssammanfattning 2026-09-24 i infra-repot](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/docs/team_work_summary_2026-09-24.md)
