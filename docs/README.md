@@ -1,5 +1,9 @@
 # Dokumentation
 
+- [Plan: flytta appplattformen till Comerits GCP-miljö](comerit_app_platform_migration_plan.md):
+  verifierat nuläge, beslutspunkt och acceptanskriterier för att återställa
+  säker CI/CD-deploy av applikationen i den nya miljön.
+
 Denna mapp samlar Team 2:s gemensamma dokumentation för applikationen och
 Workshop 3 och Workshop 4.
 
