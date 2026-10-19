@@ -1,0 +1,33 @@
+name: Verify Comerit GCP Authentication
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gcp-auth-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify-wif:
+    name: Verify WIF read access
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Authenticate to Google Cloud with Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.CICD_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify read access to Team 2 VMs
+        run: |
+          gcloud compute instances list \
+            --project itsx25-comerit \
+            --filter='name~"^team2-(primary|jumphost)$"' \
+            --format='table(name,zone.basename(),status,networkInterfaces[0].networkIP)'
