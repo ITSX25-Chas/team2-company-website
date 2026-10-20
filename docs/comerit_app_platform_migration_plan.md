@@ -11,9 +11,12 @@ produktionsändringar ingår i detta dokument.
 
 - Infra-repot har driftsatt `team2-primary` och `team2-jumphost` i Comerits
   projekt. IAP och OS Login är verifierade för båda VM:erna.
-- `team2-primary` kör Debian 12 men har ännu inte K3s installerat.
-- Den nya jumphosten har ännu inte en dokumenterat återställd
-  Headscale-installation.
+- `team2-primary` kör Debian 12 och K3s är installerat samt verifierat.
+  Efter den manuella bootstrap-körningen `39395769638` den 2026-10-20 var
+  tjänsten aktiv, noden `team2-primary` `Ready` och Kubernetes API:s
+  readiness-kontroll svarade `ok`.
+- Den nya jumphosten används för nätåtkomst från VM:erna. Headscale är inte
+  en del av den nya plattformens verifierade baslinje.
 - App-repots senaste gröna workflow-körning skedde 2026-10-13, före
   flytten av infrastrukturen till Comerits GCP-miljö.
 - Nuvarande `deploy.yml` bygger, testar, SBOM-attesterar och Cosign-signerar
@@ -29,12 +32,13 @@ de nya VM:erna.
 ## Beslut som krävs
 
 Teamet behöver tillsammans med Comerit bekräfta vilken väg som är tillåten
-för GitHub Actions till den nya K3s-miljön:
+för GitHub Actions till den nya K3s-miljön. App-repots nuvarande
+WIF-tjänstkonto är avsiktligt read-only och ska inte ges infra-behörighet.
 
-1. **Återskapa tidigare modell:** K3s på `team2-primary` och en begränsad
-   Headscale-anslutning från GitHub-runnern via jumphosten.
-2. **Godkänd alternativ modell:** exempelvis en särskilt tilldelad
-   CI/CD-åtkomstväg genom Comerits plattform.
+1. **Återskapa tidigare modell:** en begränsad Headscale-anslutning från
+   GitHub-runnern via jumphosten, med ny deployer-RBAC och ny kubeconfig.
+2. **Godkänd alternativ modell:** exempelvis en särskilt tilldelad,
+   begränsad CI/CD-åtkomstväg genom Comerits plattform.
 
 IAP är rätt väg för gruppmedlemmarnas interaktiva SSH-åtkomst, men är inte i
 sig en ersättning för GitHub-runners automatiserade åtkomst. Vald modell ska
@@ -42,11 +46,11 @@ vara dokumenterad och granskad innan den byggs.
 
 ## Genomförande efter godkänt beslut
 
-### 1. Bygg den nya applikationsplattformen i infra-repot
+### 1. Komplettera den nya applikationsplattformen i infra-repot
 
-- Installera och starta K3s på `team2-primary` genom reproducerbar
-  konfiguration.
-- Verifiera Kubernetes API, lokal persistent lagring och ingress-controller.
+- Behåll den verifierade K3s-installationen på `team2-primary`.
+- Verifiera lokal persistent lagring och installera en ingress-controller
+  genom reproducerbar konfiguration.
 - Återskapa endast nödvändiga RBAC-rättigheter för deploy-servicekontot.
 - Installera och verifiera policy-stödet som krävs av
   `k8s/image-policy.yaml` innan policyn appliceras.
@@ -101,6 +105,7 @@ exponeras:
 
 ## Nästa konkreta steg
 
-Ta beslut om CI/CD-anslutningsmodellen innan någon K3s-, Headscale- eller
-secret-ändring genomförs. Därefter skapas avgränsade infra-issues och PR:er
-för plattform, åtkomst och slutlig applikationsdeploy.
+K3s-basen är nu klar. Bekräfta CI/CD-anslutningsmodellen med Comerit innan
+någon Headscale-, kubeconfig- eller secret-ändring genomförs. Därefter delas
+arbetet upp i avgränsade PR:er för ingress och policy-stöd, deployer-RBAC och
+slutlig applikationsdeploy.
