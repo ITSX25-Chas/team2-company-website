@@ -1,9 +1,9 @@
 name: Deploy to K3s
 
 on:
+  # The former Headscale/KUBECONFIG route targets the pre-Comerit cluster.
+  # Keep deployments manual until the new, limited CI/CD route is approved.
   workflow_dispatch:
-  push:
-    branches: ["main"]
 
 jobs:
   deploy:
