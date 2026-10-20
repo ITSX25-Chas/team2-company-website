@@ -1,8 +1,8 @@
 # Dokumentation
 
 - [Plan: flytta appplattformen till Comerits GCP-miljö](comerit_app_platform_migration_plan.md):
-  verifierat nuläge, beslutspunkt och acceptanskriterier för att återställa
-  säker CI/CD-deploy av applikationen i den nya miljön.
+  verifierat nuläge, beslutad IAP-väg och acceptanskriterier för säker
+  CI/CD-deploy av applikationen i den nya miljön.
 
 Denna mapp samlar Team 2:s gemensamma dokumentation för applikationen och
 Workshop 3 och Workshop 4.
@@ -11,8 +11,9 @@ Workshop 3 och Workshop 4.
 
 - [product_backlog.md](product_backlog.md): gemensam status för risker,
   förbättringsarbete och kursmoment.
-- [headscale_api_key_rotation.md](headscale_api_key_rotation.md): ägarskap,
-  giltighetstid, säker rotation, verifiering och återkallning.
+- [headscale_api_key_rotation.md](headscale_api_key_rotation.md): historisk
+  rutin för den tidigare miljön. Den används inte av Comerits IAP-baserade
+  deployväg.
 - [workshop3_setup_status.md](workshop3_setup_status.md): teknisk setup,
   verifieringar och kvarvarande uppföljning.
 - [mitre_ti_tlp_summary_2026-10-05.md](mitre_ti_tlp_summary_2026-10-05.md):

@@ -4,13 +4,17 @@ metadata:
   name: github-deployer
   namespace: default # Inserted namespace
 ---
-#apiVersion: v1
-#kind: Secret
-#metadata:
-#  name: github-deployer-token
-#  annotations:
-#    kubernetes.io/service-account.name: github-deployer
-#type: kubernetes.io/service-account-token
+# Kubernetes v1.24+ does not create legacy ServiceAccount token Secrets
+# automatically. This explicit Secret is scoped to github-deployer and its
+# base64-encoded kubeconfig is stored only as the GitHub KUBECONFIG secret.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-deployer-token
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: github-deployer
+type: kubernetes.io/service-account-token
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
