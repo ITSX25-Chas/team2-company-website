@@ -3,7 +3,7 @@
 Detta repository innehåller Team 2:s applikation och CI/CD-flöde för Kurs 6,
 Workshop 3 och Workshop 4 Blue Team. Applikationen är byggd med Flask,
 paketeras som en container i GitHub Container Registry (GHCR) och driftsätts
-automatiskt till teamets K3s-kluster.
+kontrollerat till teamets K3s-kluster.
 
 ## Aktuell status
 
@@ -27,8 +27,9 @@ automatiskt till teamets K3s-kluster.
   `team2-primary` utan att värdet har lagts i Git.
 - GitHub-repot och GHCR-paketet är publika.
 - GitHub Actions bygger och publicerar containerimagen.
-- En kortlivad GitHub-runner ansluter till teamets Headscale-miljö.
-- Runnern när K3s API via subnet-routen till `10.0.2.3`.
+- Den tidigare Headscale-vägen används inte i Comerits miljö. Migreringen
+  använder i stället WIF, en begränsad IAP-tunnel till `team2-primary:6443`
+  och Kubernetes-ServiceAccounten `github-deployer`.
 - Deployment, PersistentVolumeClaim och Service är applicerade i K3s.
 - Podden är verifierad som `Running` och `/healthz` rapporterar en frisk
   applikation med databasanslutning.
@@ -55,7 +56,7 @@ branch och pull request.
 ## Viktiga filer
 
 - [.github/workflows/deploy.yml](.github/workflows/deploy.yml): bygger imagen,
-  ansluter en tillfällig runner till Headscale och driftsätter till K3s.
+  använder WIF och en begränsad IAP-tunnel och driftsätter till K3s.
 - [k8s/deployment.yaml](k8s/deployment.yaml): applikationens Deployment.
 - [k8s/pvc.yaml](k8s/pvc.yaml): persistent lagring för SQLite-data.
 - [k8s/service.yaml](k8s/service.yaml): intern Kubernetes Service.
@@ -68,8 +69,8 @@ branch och pull request.
 - [scripts/generate-kubeconfig.sh](scripts/generate-kubeconfig.sh): genererar
   en begränsad kubeconfig för CI/CD.
 - [docs/](docs/): backlog, status, guider och gemensamma sammanfattningar.
-- [docs/headscale_api_key_rotation.md](docs/headscale_api_key_rotation.md):
-  säker rutin för Headscale API-nyckelns livscykel.
+- [docs/comerit_app_platform_migration_plan.md](docs/comerit_app_platform_migration_plan.md):
+  status och kontrollerad övergång till Comerits IAP-baserade deployväg.
 - [members/](members/): personliga anteckningar och arbetssammanfattningar.
 
 ## Dokumentation
@@ -86,16 +87,15 @@ branch och pull request.
 
 ## Relaterad infrastruktur
 
-Applikationens GCP-, Headscale-, nätverks- och K3s-infrastruktur hanteras i det
+Applikationens GCP-, nätverks- och K3s-infrastruktur hanteras i det
 separata [infra-repot](https://github.com/ITSX25-Chas/kurs6-team2-infra).
 
 - [Gemensam anslutningsguide](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/docs/gemensam_anslutningsguide.md)
 - [Infra-repots README](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/README.md)
 - [Infra-backlog](https://github.com/ITSX25-Chas/kurs6-team2-infra/blob/main/docs/product_backlog.md)
 
-Normal åtkomst till privata resurser sker via personliga Tailscale-noder,
-annonserade subnet-rutter och Split DNS. SOCKS5 är endast en dokumenterad
-reservmetod.
+Personlig åtkomst till VM:erna sker via Google IAP och OS Login. GitHub Actions
+använder en separat, begränsad IAP-tunnel för deploy till Kubernetes API.
 
 ## Arbetsflöde
 
@@ -159,26 +159,25 @@ feature-branches och pull requests utan att publicera eller deploya imagen.
 
 ## Deployment
 
-En push till `main` eller en manuell `workflow_dispatch` startar pipelinen:
+En manuell `workflow_dispatch` startar pipelinen under migrationen:
 
 1. Koden checkas ut.
 2. Metadata för `latest` och aktuell commit-SHA skapas.
 3. Containerimagen byggs, publiceras i GHCR och identifieras med digest.
 4. En CycloneDX-SBOM skapas och attesteras mot samma image-digest.
 5. Imagen signeras nyckellöst med Cosign och GitHub OIDC.
-6. En tidsbegränsad Headscale API-nyckel i GitHub Secrets godkänner att en
-   kortlivad engångsnyckel skapas automatiskt.
-7. GitHub-runnern ansluter med taggen `tag:github-runner`.
-8. Subnet-route och TCP 6443 till K3s verifieras.
+6. GitHub OIDC autentiserar mot WIF med det begränsade deploykontot.
+7. GitHub-runnern öppnar en IAP-tunnel enbart till `team2-primary:6443`.
+8. IAP-tunneln och Kubernetes API verifieras.
 9. Kubernetes-manifesten, inklusive Ingress, appliceras.
 10. Rollout till den signerade imagen verifieras.
 
 Workflowet använder GitHub Secrets och Variables. Hemliga värden får aldrig
 skrivas i dokumentation, Issues, loggar eller commits.
 
-Headscale API-nyckeln roteras enligt
-[rotationsguiden](docs/headscale_api_key_rotation.md). Den är skild från GCP:
-WIF används fortsatt utan en långlivad GCP Service Account Key.
+WIF används utan en långlivad GCP Service Account Key. `CICD_SERVICE_ACCOUNT`
+är läsande för GCP-kontroller och `DEPLOY_SERVICE_ACCOUNT` är begränsad till
+IAP-tunneln. Kubernetes-behörigheten kommer från den scoped kubeconfigen.
 
 Applikationens sessionsnyckel ligger i Kubernetes-secreten
 `company-website-secrets`. Den skapas en gång av en behörig administratör före
@@ -213,8 +212,9 @@ RBAC får medvetet inte läsa eller ändra Secrets.
 
 - Använd aldrig riktiga credentials i kod eller dokumentation.
 - Kontrollera `git status` och diffen före varje commit.
-- Kubeconfig och Headscale API-nyckel lagras endast som GitHub Secrets.
-- Den tillfälliga CI-noden får endast den åtkomst som behövs för deployment.
+- Kubeconfigen lagras endast som GitHub Secret och innehåller ett scoped
+  ServiceAccount-token, aldrig cluster-admin.
+- Deploykontot får endast öppna IAP-tunnel till Kubernetes API.
 - Images taggas för spårbarhet, deployas med digest och signeras nyckellöst
   med Cosign.
 - Policy-enforcement aktiveras först efter verifierad signering för att

@@ -1,8 +1,8 @@
 name: Deploy to K3s
 
 on:
-  # The former Headscale/KUBECONFIG route targets the pre-Comerit cluster.
-  # Keep deployments manual until the new, limited CI/CD route is approved.
+  # Deployment remains manual during the Comerits migration.
+  # Each completed run is reviewed before automatic deployment is reconsidered.
   workflow_dispatch:
 
 jobs:
@@ -82,59 +82,39 @@ jobs:
       - name: Sign image with Cosign
         run: cosign sign --yes "${{ steps.image.outputs.reference }}@${{ steps.build.outputs.digest }}"
 
-      # --- Network connectivity to K3s node ---
-      - name: Generate Ephemeral Headscale Key
-        id: generate_key
-        run: |
-          EXPIRATION=$(date -u -d '+10 minutes' +%Y-%m-%dT%H:%M:%SZ)
-
-          RESPONSE=$(curl -s -f -X POST "${{ secrets.HEADSCALE_URL }}/api/v1/preauthkey" \
-            -H "Authorization: Bearer ${{ secrets.HEADSCALE_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-                  "user": ${{ vars.HEADSCALE_USER_ID }},
-                  "ephemeral": true,
-                  "reusable": false,
-                  "expiration": "'"$EXPIRATION"'",
-                  "aclTags": ["tag:github-runner"]
-                }')
-
-          EPHEMERAL_KEY=$(echo "$RESPONSE" | jq -r '.preAuthKey.key')
-
-          if [ -z "$EPHEMERAL_KEY" ] || [ "$EPHEMERAL_KEY" == "null" ]; then
-            echo "Error: Failed to retrieve key from Headscale API"
-            echo "Response: $RESPONSE"
-            exit 1
-          fi
-
-          echo "::add-mask::$EPHEMERAL_KEY"
-          echo "key=$EPHEMERAL_KEY" >> $GITHUB_OUTPUT
-
-      - name: Connect to Headscale Mesh
-        uses: tailscale/github-action@v4
+      # The deploy identity can open only an IAP tunnel to the Kubernetes API.
+      # CICD_SERVICE_ACCOUNT remains the separate read-only account.
+      - name: Authenticate deploy tunnel to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          authkey: ${{ steps.generate_key.outputs.key }}
-          args: --login-server=${{ secrets.HEADSCALE_URL }}
-          version: 1.102.4
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
 
-      - name: Verify connectivity to K3s node
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Open and verify IAP tunnel to K3s API
         run: |
-          K3S_HOST="10.0.${{ vars.TEAM_ID }}.3"
+          gcloud compute start-iap-tunnel team2-primary 6443 \
+            --project=itsx25-comerit \
+            --zone=europe-north2-b \
+            --local-host-port=127.0.0.1:6443 \
+            --verbosity=warning \
+            > /tmp/iap-k3s-tunnel.log 2>&1 &
+          echo $! > /tmp/iap-k3s-tunnel.pid
 
           for attempt in {1..12}; do
-            if ip route get "$K3S_HOST" | grep -q tailscale0 && \
-               timeout 3 bash -c "</dev/tcp/$K3S_HOST/6443"; then
-              echo "Tailscale route and K3s API connectivity confirmed"
+            if timeout 3 bash -c "</dev/tcp/127.0.0.1/6443"; then
+              echo "IAP tunnel to the K3s API is reachable"
               exit 0
             fi
 
-            echo "Waiting for the Headscale subnet route (attempt $attempt/12)"
+            echo "Waiting for the IAP tunnel (attempt $attempt/12)"
             sleep 5
           done
 
-          echo "Error: K3s API did not become reachable through Tailscale"
-          ip route get "$K3S_HOST" || true
-          tailscale status || true
+          echo "Error: K3s API did not become reachable through IAP"
+          cat /tmp/iap-k3s-tunnel.log || true
           exit 1
 
       # --- Configure kubectl for remote k3s ---
@@ -143,6 +123,8 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
+          CLUSTER_NAME="$(kubectl config view -o jsonpath='{.clusters[0].name}')"
+          kubectl config set-cluster "$CLUSTER_NAME" --server=https://127.0.0.1:6443
           kubectl get pods -n default
 
       # --- Deploy to K3s ---
@@ -151,6 +133,8 @@ jobs:
           export DEPLOY_IMAGE="${{ steps.image.outputs.reference }}@${{ steps.build.outputs.digest }}"
           export GIT_COMMIT="${{ github.sha }}"
           envsubst < k8s/deployment.yaml > /tmp/deployment.yaml
+          kubectl api-resources --api-group=policy.sigstore.dev -o name | \
+            grep -qx 'clusterimagepolicies.policy.sigstore.dev'
           kubectl apply -f k8s/image-policy.yaml
           kubectl apply -f /tmp/deployment.yaml -f k8s/pvc.yaml -f k8s/service.yaml -f k8s/ingress.yaml
           kubectl rollout status deployment/company-website --timeout=120s
@@ -170,3 +154,4 @@ jobs:
           kubectl logs -l app=company-website --all-containers=true --prefix --tail=100 || true
           kubectl logs -l app=company-website -c web --previous --tail=100 || true
           kubectl logs -l app=company-website -c fix-data-permissions --previous --tail=100 || true
+          cat /tmp/iap-k3s-tunnel.log || true

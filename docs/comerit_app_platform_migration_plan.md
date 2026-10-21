@@ -29,20 +29,22 @@ Det betyder att applikationskoden och supply-chain-kontrollerna kan användas
 vidare, men att den tidigare körplattformen inte automatiskt följer med till
 de nya VM:erna.
 
-## Beslut som krävs
+## Beslutad CI/CD-modell
 
-Teamet behöver tillsammans med Comerit bekräfta vilken väg som är tillåten
-för GitHub Actions till den nya K3s-miljön. App-repots nuvarande
-WIF-tjänstkonto är avsiktligt read-only och ska inte ges infra-behörighet.
+Comerit har godkänt en ny, begränsad deployväg. GitHub Actions autentiserar
+med Team 2:s befintliga WIF-provider och tjänstkontot
+`team2-deploy@itsx25-comerit.iam.gserviceaccount.com`. Det kontot får enbart
+öppna en IAP-tunnel till `team2-primary:6443`; det får inte skapa eller ändra
+infrastruktur.
 
-1. **Återskapa tidigare modell:** en begränsad Headscale-anslutning från
-   GitHub-runnern via jumphosten, med ny deployer-RBAC och ny kubeconfig.
-2. **Godkänd alternativ modell:** exempelvis en särskilt tilldelad,
-   begränsad CI/CD-åtkomstväg genom Comerits plattform.
+Väl inne i klustret använder workflowet ServiceAccounten `github-deployer`.
+Dess kubeconfig innehåller ett scoped token och ersätter tidigare
+cluster-admin-åtkomst. Den läsande kontrollen i app-repot fortsätter använda
+`team2-las@itsx25-comerit.iam.gserviceaccount.com` via
+`CICD_SERVICE_ACCOUNT`.
 
-IAP är rätt väg för gruppmedlemmarnas interaktiva SSH-åtkomst, men är inte i
-sig en ersättning för GitHub-runners automatiserade åtkomst. Vald modell ska
-vara dokumenterad och granskad innan den byggs.
+Headscale används inte i den nya deploykedjan. Infra-repots brandvägg öppnar
+redan IAP-intervallet `35.235.240.0/20` mot TCP 6443 på primary-noden.
 
 ## Genomförande efter godkänt beslut
 
@@ -54,16 +56,17 @@ vara dokumenterad och granskad innan den byggs.
 - Återskapa endast nödvändiga RBAC-rättigheter för deploy-servicekontot.
 - Installera och verifiera policy-stödet som krävs av
   `k8s/image-policy.yaml` innan policyn appliceras.
-- Om Headscale-modellen väljs: installera och dokumentera Headscale på
-  jumphosten, dess begränsade policy samt route mellan GitHub-runnern och
-  K3s API. Inga administrativa nyckelvärden sparas i Git.
+- Bekräfta att IAP-brandväggsregeln fortsatt begränsas till
+  `35.235.240.0/20` mot TCP 6443 och primary-noden.
 
 ### 2. Förbered applikationsrepo och CI/CD
 
 - Skapa en ny, begränsad kubeconfig för GitHub-deployern när den nya
   kluster-RBAC:en är verifierad.
-- Skapa eller rotera `KUBECONFIG`, `HEADSCALE_URL` och
-  `HEADSCALE_API_KEY` i GitHub Secrets först när den nya plattformen är klar.
+- Applicera begränsad deployer-RBAC, skapa en scoped token och uppdatera
+  GitHub-secreten `KUBECONFIG` med en kubeconfig för IAP-tunneln.
+- Lägg `DEPLOY_SERVICE_ACCOUNT` som repo-variabel. Behåll
+  `CICD_SERVICE_ACCOUNT` för den läsande GCP-kontrollen.
 - Behåll de tidigare secretsen orörda tills den nya deploykedjan fungerar;
   återkalla dem först efter en kontrollerad övergång.
 - Bekräfta att `TEAM_ID` och övriga icke-hemliga repo-variabler stämmer med
@@ -105,7 +108,7 @@ exponeras:
 
 ## Nästa konkreta steg
 
-K3s-basen är nu klar. Bekräfta CI/CD-anslutningsmodellen med Comerit innan
-någon Headscale-, kubeconfig- eller secret-ändring genomförs. Därefter delas
-arbetet upp i avgränsade PR:er för ingress och policy-stöd, deployer-RBAC och
-slutlig applikationsdeploy.
+K3s-basen och den godkända IAP-modellen är klara. Nästa steg är att applicera
+och verifiera deployer-RBAC, lägga in den scoped kubeconfigen som GitHub
+Secret och därefter köra den manuella deployen. Policystöd, ingress och
+applikationssecret ska verifieras före en godkänd rollout.
