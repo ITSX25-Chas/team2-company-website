@@ -18,7 +18,7 @@ echo "Generating an IAP-tunnel kubeconfig for namespace: ${NAMESPACE}" >&2
 CA_CERT=$(sudo cat /var/lib/rancher/k3s/server/tls/server-ca.crt | base64 -w 0)
 
 # Get the ServiceAccount token from the dedicated Secret
-TOKEN=$(sudo kubectl get secret github-deployer-token -n "${NAMESPACE}" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
+TOKEN=$(sudo k3s kubectl get secret github-deployer-token -n "${NAMESPACE}" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
 if [ -z "$TOKEN" ]; then
     echo "ERROR: Could not get token from secret 'github-deployer-token' in namespace '${NAMESPACE}'." >&2
     echo "Did you apply k8s/github-permissions.yaml?" >&2
