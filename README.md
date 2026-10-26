@@ -7,6 +7,29 @@ kontrollerat till teamets K3s-kluster.
 
 ## Aktuell status
 
+- Den 2026-10-26 driftsattes applikationen i `itsx25-comerit` på
+  `team2-primary`. [Deploy-körningen](https://github.com/ITSX25-Chas/team2-company-website/actions/runs/40294327401)
+  var grön, inklusive tester, signering och rollout.
+- GitHub Actions använder WIF och en begränsad IAP-tunnel till K3s API.
+  Kubernetes-åtkomsten sker med `github-deployer`, inte cluster-admin.
+- Podden var `1/1 Running` och `/healthz` svarade att applikationen och
+  databasanslutningen var friska. Webbplatsen öppnades via en personlig
+  IAP-tunnel; inloggning har ännu inte verifierats i den nya miljön.
+- Sigstore policy-controller och policyn är installerade. I namespace
+  `default` godkändes applikationens image i en server-side dry-run och en
+  BusyBox-image utan matchande policy nekades. Den gröna deployen kördes
+  innan enforcement aktiverades; en ny full deploy med enforcement återstår.
+- Kubernetes-RBAC, applikationssecret och policystöd har förberetts manuellt.
+  Reproducerbar installation och hantering av CI-token behöver följas upp.
+- Tillgång till webbplatsen sker för närvarande via IAP och port forwarding.
+  Ingress-manifestet finns kvar, men dess controller och gamla DNS-väg är
+  inte verifierade i den nya miljön.
+
+## Tidigare workshopverifiering
+
+Punkterna nedan dokumenterar den tidigare miljön och ska inte tolkas som
+verifieringar av Comerits nya miljö.
+
 - PR #32 är mergad och driftsatt på `main`. Den aktuella hardeningen kör
   applikationen som användare `10001`, använder skrivskyddat rotfilsystem och
   förbereder SQLite-volymens rättigheter i en initcontainer.
@@ -27,9 +50,6 @@ kontrollerat till teamets K3s-kluster.
   `team2-primary` utan att värdet har lagts i Git.
 - GitHub-repot och GHCR-paketet är publika.
 - GitHub Actions bygger och publicerar containerimagen.
-- Den tidigare Headscale-vägen används inte i Comerits miljö. Migreringen
-  använder i stället WIF, en begränsad IAP-tunnel till `team2-primary:6443`
-  och Kubernetes-ServiceAccounten `github-deployer`.
 - Deployment, PersistentVolumeClaim och Service är applicerade i K3s.
 - Podden är verifierad som `Running` och `/healthz` rapporterar en frisk
   applikation med databasanslutning.
@@ -48,7 +68,7 @@ kontrollerat till teamets K3s-kluster.
   och otillåtna platshållare verifierades dessutom manuellt i live-miljön
   utan att några profiländringar sparades.
 
-Den tekniska setupen för Workshop 3 och Workshop 4 är verifierad. Defensiv
+Den tidigare tekniska setupen för Workshop 3 och Workshop 4 verifierades då. Defensiv
 analys av applikationen fortsätter och observationer dokumenteras utan
 credentials eller flaggvärden. Åtgärdsförslag hanteras via Issues, backlog,
 branch och pull request.
@@ -60,8 +80,9 @@ branch och pull request.
 - [k8s/deployment.yaml](k8s/deployment.yaml): applikationens Deployment.
 - [k8s/pvc.yaml](k8s/pvc.yaml): persistent lagring för SQLite-data.
 - [k8s/service.yaml](k8s/service.yaml): intern Kubernetes Service.
-- [k8s/ingress.yaml](k8s/ingress.yaml): hostbaserad routing för
-  `company-website.team2.arpa`.
+- [k8s/ingress.yaml](k8s/ingress.yaml): tidigare hostbaserad routing för
+  `company-website.team2.arpa`; controller och DNS är inte verifierade i
+  Comerits miljö.
 - [k8s/github-permissions.yaml](k8s/github-permissions.yaml): RBAC för
   GitHub-deployern; appliceras manuellt som engångskonfiguration.
 - [k8s/image-policy.yaml](k8s/image-policy.yaml): Cosign-policy för images

@@ -1,114 +1,57 @@
-# Plan: flytta appplattformen till Comerits GCP-miljö
+# Company Website i Comerits miljö
 
-## Status
+## Status 2026-10-26
 
-Planen beskriver vad som behöver vara på plats innan `company-website` kan
-driftsättas i Team 2:s nya GCP-miljö, `itsx25-comerit`. Den är en
-besluts- och arbetsplan, inte ett genomförande. Inga secrets, nycklar eller
-produktionsändringar ingår i detta dokument.
+Applikationen har driftsatts på K3s på `team2-primary` i `itsx25-comerit`.
+Detta dokument skiljer på verifierade resultat och återstående arbete. Inga
+secret-värden eller tokens ska dokumenteras här.
 
-## Verifierat nuläge
+## CI/CD och åtkomst
 
-- Infra-repot har driftsatt `team2-primary` och `team2-jumphost` i Comerits
-  projekt. IAP och OS Login är verifierade för båda VM:erna.
-- `team2-primary` kör Debian 12 och K3s är installerat samt verifierat.
-  Efter den manuella bootstrap-körningen `39395769638` den 2026-10-20 var
-  tjänsten aktiv, noden `team2-primary` `Ready` och Kubernetes API:s
-  readiness-kontroll svarade `ok`.
-- Den nya jumphosten används för nätåtkomst från VM:erna. Headscale är inte
-  en del av den nya plattformens verifierade baslinje.
-- App-repots senaste gröna workflow-körning skedde 2026-10-13, före
-  flytten av infrastrukturen till Comerits GCP-miljö.
-- Nuvarande `deploy.yml` bygger, testar, SBOM-attesterar och Cosign-signerar
-  imagen. Själva deployen förutsätter dessutom Headscale, K3s på
-  `10.0.2.3:6443` och ett begränsat `KUBECONFIG` i GitHub Secrets.
-- Ingress-manifestet använder det interna namnet
-  `company-website.team2.arpa`.
+- GitHub Actions använder Team 2:s WIF-provider och det begränsade
+  `team2-deploy`-kontot för en IAP-tunnel till primarys Kubernetes API.
+- Kubernetes-åtkomsten sker med en scoped kubeconfig för ServiceAccounten
+  `github-deployer`. En kontroll visade att kontot kan uppdatera deploymenten
+  men inte läsa secrets. Policyns klusterresurs har en separat behörighet.
+- Den läsande GCP-kontrollen använder `team2-las`, inte infra-kontot.
+- [Deploy-körningen](https://github.com/ITSX25-Chas/team2-company-website/actions/runs/40294327401)
+  var grön med tester, imagebygge, SBOM, signering och rollout. Den kördes
+  innan enforcement aktiverades i `default`.
+- Personlig webbåtkomst verifierades via IAP och port forwarding. Inloggning
+  och tidigare profildata har inte verifierats i den nya miljön.
 
-Det betyder att applikationskoden och supply-chain-kontrollerna kan användas
-vidare, men att den tidigare körplattformen inte automatiskt följer med till
-de nya VM:erna.
+## Policystöd och drift
 
-## Beslutad CI/CD-modell
+Sigstore policy-controller installerades manuellt genom en K3s HelmChart.
+`verify-company-website` rapporterade `Ready`, och enforcement aktiverades
+med en label på `default`. I en separat testnamespace godkändes appens image
+med server-side dry-run, medan en BusyBox-image nekades eftersom ingen policy
+matchade. Appens image godkändes även i en dry-run i `default`.
 
-Comerit har godkänt en ny, begränsad deployväg. GitHub Actions autentiserar
-med Team 2:s befintliga WIF-provider och tjänstkontot
-`team2-deploy@itsx25-comerit.iam.gserviceaccount.com`. Det kontot får enbart
-öppna en IAP-tunnel till `team2-primary:6443`; det får inte skapa eller ändra
-infrastruktur.
+Applikationspodden var `1/1 Running` och `/healthz` rapporterade frisk
+applikation och ansluten databas. Applikationssecreten, deployer-RBAC och
+policykonfigurationen har satts upp manuellt, inte återskapats automatiskt
+av infra-repots bootstrap.
 
-Väl inne i klustret använder workflowet ServiceAccounten `github-deployer`.
-Dess kubeconfig innehåller ett scoped token och ersätter tidigare
-cluster-admin-åtkomst. Den läsande kontrollen i app-repot fortsätter använda
-`team2-las@itsx25-comerit.iam.gserviceaccount.com` via
-`CICD_SERVICE_ACCOUNT`.
+Ingress-manifestet finns kvar och appliceras av workflowet, men en fungerande
+Ingress-controller och den gamla DNS-vägen har inte verifierats i den nya
+miljön. Teamet använder tills vidare IAP-tunnel för webbåtkomst.
 
-Headscale används inte i den nya deploykedjan. Infra-repots brandvägg öppnar
-redan IAP-intervallet `35.235.240.0/20` mot TCP 6443 på primary-noden.
+## Återstår
 
-## Genomförande efter godkänt beslut
+1. Verifiera en full deploy och rollout efter att enforcement aktiverats, och
+   kontrollera även hur återställning ska genomföras med gällande policy.
+2. Dokumentera och besluta hur manuell RBAC, policy-controller, namespace-label
+   och applikationssecret ska kunna återskapas vid en ny installation.
+3. Följ upp säker lagring, rotation och återkallning av den scoped Kubernetes-
+   token som används i GitHub Secrets. Publicera aldrig token eller kubeconfig.
+4. Testa inloggning med ett tilldelat konto och verifiera eventuell data enligt
+   teamets behörigheter. Hälsokontrollen bevisar inte att inloggning fungerar.
+5. Bedöm om Ingress och DNS behövs framöver. Ta inte bort eller installera en
+   controller utan ett separat beslut och verifiering.
+6. Se över äldre uppgifter och secrets efter en kontrollerad övergång samt
+   GitHub Actions varningar om äldre Node-versioner.
 
-### 1. Komplettera den nya applikationsplattformen i infra-repot
-
-- Behåll den verifierade K3s-installationen på `team2-primary`.
-- Verifiera lokal persistent lagring och installera en ingress-controller
-  genom reproducerbar konfiguration.
-- Återskapa endast nödvändiga RBAC-rättigheter för deploy-servicekontot.
-- Installera och verifiera policy-stödet som krävs av
-  `k8s/image-policy.yaml` innan policyn appliceras.
-- Bekräfta att IAP-brandväggsregeln fortsatt begränsas till
-  `35.235.240.0/20` mot TCP 6443 och primary-noden.
-
-### 2. Förbered applikationsrepo och CI/CD
-
-- Skapa en ny, begränsad kubeconfig för GitHub-deployern när den nya
-  kluster-RBAC:en är verifierad.
-- Applicera begränsad deployer-RBAC, skapa en scoped token och uppdatera
-  GitHub-secreten `KUBECONFIG` med en kubeconfig för IAP-tunneln.
-- Lägg `DEPLOY_SERVICE_ACCOUNT` som repo-variabel. Behåll
-  `CICD_SERVICE_ACCOUNT` för den läsande GCP-kontrollen.
-- Behåll de tidigare secretsen orörda tills den nya deploykedjan fungerar;
-  återkalla dem först efter en kontrollerad övergång.
-- Bekräfta att `TEAM_ID` och övriga icke-hemliga repo-variabler stämmer med
-  den nya miljön.
-- Uppdatera workflow och anslutningsdokument endast för den valda modellen.
-
-### 3. Validera i en PR
-
-- Kör `Application Checks` för kod, tester och container-build.
-- Kör deploy-workflowet mot den nya miljön från en granskad PR eller en
-  manuellt initierad körning enligt teamets rutin.
-- Verifiera signerad image-digest, SBOM-attestering, policykontroll,
-  Kubernetes-rollout, PVC och `/healthz`.
-- Kontrollera att ingress och intern DNS fungerar enligt den nya
-  åtkomstmodellen.
-
-### 4. Avsluta migrationen
-
-- Uppdatera README, anslutningsguide, backlog och arbetssammanfattning med
-  verifierade resultat.
-- Markera tidigare Headscale-, K3s- och proxyinstruktioner som historiska om
-  de inte längre används.
-- Ta bort eller rotera föregående CI/CD-uppgifter först när den nya kedjan är
-  grön och dokumenterad.
-
-## Acceptanskriterier
-
-Migrationen är klar först när följande kan visas utan att hemliga värden
-exponeras:
-
-- `team2-primary` har ett fungerande K3s-kluster i Comerits miljö.
-- GitHub Actions når enbart K3s API genom den godkända, begränsade
-  CI/CD-anslutningen.
-- Deploy-workflowet är grönt och använder signerad image med SBOM-attestering.
-- Kubernetes-rollouten är redo och `/healthz` rapporterar en frisk
-  applikation.
-- Åtkomst, DNS/Ingress, secrets och ansvar är dokumenterade och granskade i
-  en PR.
-
-## Nästa konkreta steg
-
-K3s-basen och den godkända IAP-modellen är klara. Nästa steg är att applicera
-och verifiera deployer-RBAC, lägga in den scoped kubeconfigen som GitHub
-Secret och därefter köra den manuella deployen. Policystöd, ingress och
-applikationssecret ska verifieras före en godkänd rollout.
+Tidigare Headscale-anslutning gäller den gamla miljön och används inte i den
+nuvarande deploykedjan. Ändringar går genom teamets vanliga branch- och
+PR-rutin.
