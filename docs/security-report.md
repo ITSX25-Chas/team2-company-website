@@ -4,7 +4,7 @@
 
 Detta projekt har flera allvarliga säkerhetsbrister som tillsammans utgör en hög risk för konfidentialitet, integritet och autentisering. Den mest kritiska problemet är SQL-injection i login-flödet, följt av felaktig lösenordshantering, hårdkodade hemligheter, bristande auktorisation och exponering av känslig intern information i seed-data. Om systemet används i en verklig miljö med användardata eller produktionsdata kan detta leda till obehörig åtkomst, dataläckage och manipulation av användarkonton.
 
-Det rekommenderas att projektet inte deployas eller används med riktiga användare förrän de viktigaste sårbarheterna är åtgärdade. En genomgripande säkringsprocess krävs innan systemet kan anses vara säkert nog för produktion.
+Det rekommenderas att projektet inte publiceras eller används med riktiga användare förrän de viktigaste sårbarheterna är åtgärdade. En genomgripande säkringsprocess krävs innan systemet kan anses vara säkert nog för produktion.
 
 ## Sammanfattning
 
@@ -74,8 +74,8 @@ Koden använder inte ett korrekt lösenordsflöde. Istället för att verifiera 
 - Risk för autentiseringsbypass
 
 **Rekommenderad åtgärd:**
-- Hasha alla lösenord med ett starkt algoritm, exempelvis scrypt eller bcrypt.
-- Verifiera med `check_password_hash()` eller equivalent säker metod.
+- Hasha alla lösenord med en stark algoritm, exempelvis scrypt eller bcrypt.
+- Verifiera med `check_password_hash()` eller motsvarande säker metod.
 - Använd en tydlig, korrekt autentiseringsmodell utan att lägga lösenord i SQL-frågor.
 
 ---
@@ -145,14 +145,14 @@ Seed-data innehåller text som avslöjar:
 - staging DB-lösenord
 - sökvägar till backups
 - interna projektkodnamn
-- admin-panelens mockup-plats
+- admin-panelens sökväg
 
 Detta visar att känslig information lagras i versionerad kod och kan exponeras i produktion eller i testmiljöer.
 
 **Konsekvens:**
 - Läckage av systemhemligheter
 - Förenklad attack mot miljöer
-- Ökad risk för insider- och externa attacker
+- Ökad risk för insiderattacker och externa attacker
 
 **Rekommenderad åtgärd:**
 - Ta bort all intern information från kod (även tidigare versioner).
@@ -219,7 +219,7 @@ Projektet använder SQLite med en lokal fil i filsystemet. Det fungerar för dem
 
 **Rekommenderad åtgärd:**
 - Använd en säker databas för produktion, exempelvis PostgreSQL eller MySQL.
-- Separera applikations- och databassekretess.
+- Separera applikations- och databas-sekretess.
 - Implementera säker körning, backup och åtkomstkontroll.
 
 ---
